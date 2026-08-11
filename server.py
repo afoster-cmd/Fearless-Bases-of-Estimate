@@ -349,7 +349,7 @@ class Handler(BaseHTTPRequestHandler):
             self._send_json(HTTPStatus.OK, {"keys": keys, "prefix": prefix, "shared": shared})
             return
 
-        if path in ("/", "/index.html") or path == "/" + os.path.basename(HTML_PATH):
+        if path in ("/", "/index.html") or (HTML_PATH and path == "/" + os.path.basename(HTML_PATH)):
             self._serve_app()
             return
 
@@ -414,6 +414,32 @@ class Handler(BaseHTTPRequestHandler):
     # --- app file -----------------------------------------------------------
 
     def _serve_app(self):
+        if not HTML_PATH:
+            try:
+                present = sorted(os.listdir(APP_DIR))
+            except OSError:
+                present = ["(could not list directory)"]
+            diag = (
+                "<html><body style='font-family:sans-serif;padding:40px;max-width:700px;margin:auto;'>"
+                "<h2>Server is running, but no boe_builder*.html was found</h2>"
+                "<p>The server process started fine and is answering requests — this page proves that. "
+                "The problem is just that it couldn't find the builder HTML file next to server.py.</p>"
+                f"<p><b>Looking in:</b> <code>{APP_DIR}</code></p>"
+                f"<p><b>Files actually present there:</b></p><ul>"
+                + "".join(f"<li><code>{f}</code></li>" for f in present)
+                + "</ul>"
+                "<p>Fix: make sure a file named like <code>boe_builder_28.html</code> is committed to "
+                "the same folder as <code>server.py</code> in your repo, then redeploy.</p>"
+                "</body></html>"
+            )
+            body = diag.encode("utf-8")
+            self.send_response(HTTPStatus.OK)  # 200, not an error — this page is fully intentional
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.send_header("Cache-Control", "no-store")
+            self.end_headers()
+            self.wfile.write(body)
+            return
         try:
             with open(HTML_PATH, "rb") as f:
                 body = f.read()
@@ -445,23 +471,29 @@ class Handler(BaseHTTPRequestHandler):
 # ----------------------------------------------------------------------------
 
 def find_html(explicit):
+    """Returns a path, or None if nothing suitable was found — never crashes the
+    process. A missing file should show a helpful page, not kill the server before
+    it can even bind to a port (which is what makes 'Application failed to respond'
+    so hard to diagnose)."""
     if explicit:
         path = explicit if os.path.isabs(explicit) else os.path.join(APP_DIR, explicit)
         if not os.path.isfile(path):
-            sys.exit(f"error: --file {explicit!r} not found.")
+            print(f"WARNING: --file {explicit!r} not found.")
+            return None
         return path
 
     def version_of(name: str) -> int:
         m = re.search(r"(\d+)", name)
         return int(m.group(1)) if m else -1
 
-    candidates = [f for f in os.listdir(APP_DIR)
-                  if re.match(r"^boe_builder.*\.html$", f, re.IGNORECASE)]
+    try:
+        candidates = [f for f in os.listdir(APP_DIR)
+                      if re.match(r"^boe_builder.*\.html$", f, re.IGNORECASE)]
+    except OSError:
+        candidates = []
     if not candidates:
-        sys.exit(
-            "error: no boe_builder*.html found next to server.py.\n"
-            "Put the builder HTML in the same folder, or point at it with --file."
-        )
+        print("WARNING: no boe_builder*.html found next to server.py.")
+        return None
     candidates.sort(key=lambda f: (version_of(f), f))
     return os.path.join(APP_DIR, candidates[-1])
 
@@ -493,7 +525,7 @@ def main():
 
     httpd = ThreadingHTTPServer((args.host, args.port), Handler)
     print("BOE Builder server")
-    print(f"  serving : {os.path.basename(HTML_PATH)}")
+    print(f"  serving : {os.path.basename(HTML_PATH) if HTML_PATH else '(no boe_builder*.html found — see warning above, / will show a diagnostic page)'}")
     print(f"  data    : {DATA_DIR}")
     print(f"  host    : {args.host}:{args.port}")
     if ACCESS_TOKEN:
