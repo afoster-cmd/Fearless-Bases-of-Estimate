@@ -1,10 +1,43 @@
 #!/usr/bin/env python3
 """
-BOE Builder — local server + disk-backed storage
-=================================================
+BOE Builder — local/server storage backend
+============================================
 
 Serves the Basis of Estimate builder (boe_builder_*.html) and gives it a real
 storage backend on disk, replacing the browser's tiny localStorage quota.
+
+DEPLOYMENT NOTE (Railway / any PaaS)
+-------------------------------------
+Railway (and most hosts) assign your app a PORT via an environment variable
+and route traffic to it on 0.0.0.0, not 127.0.0.1. Binding to 127.0.0.1
+(loopback-only) is invisible to their router — that's what "Application
+failed to respond" usually means. This version reads HOST/PORT from the
+environment automatically, so no extra configuration is needed on Railway:
+just set the Start Command to `python server.py` and deploy.
+
+SECURITY NOTE — read this before deploying anywhere public
+-------------------------------------------------------------
+This server has NO built-in authentication by default. Anyone who reaches
+its URL can read, write, or delete every stored estimate — including
+whatever CUI or contractor-proprietary data it might contain. Locally
+(127.0.0.1) that's fine, since only your own machine can reach it. Once
+it's reachable from the internet (as on Railway), that's a real exposure.
+
+Two ways to guard it:
+  1. Set the BOE_ACCESS_TOKEN environment variable to some long random
+     string. Every /api/storage/* request must then include it, either as
+     a `?token=...` query parameter or an `X-BOE-Token` header. Requests
+     without it get a 401. The HTML side isn't wired to send this
+     automatically yet — you'd need to add the token to fetch() calls in
+     the page, or put this behind a reverse proxy that injects it.
+  2. Don't deploy it publicly at all — run it locally (`python server.py`,
+     default 127.0.0.1) for your own machine, and use Railway (or similar)
+     only if multiple trusted people on a private network need shared
+     access, ideally with real authentication in front of it.
+
+If BOE_ACCESS_TOKEN is unset and the server is bound to a non-loopback
+host, it prints a loud warning to the console on startup so this isn't
+silently forgotten.
 
 Why this exists (the storage issue this fixes)
 ----------------------------------------------
@@ -18,25 +51,36 @@ The BOE builder runs in three environments:
                                          Original file bytes over ~700 KB get
                                          skipped, and a few uploads exhaust it.
   3. Served by THIS script            -> the page detects /api/storage/ping and
-     (http://127.0.0.1:8000)             talks to this server instead. Data is
+     (locally or on Railway)             talks to this server instead. Data is
                                          written to the boe_data/ folder next to
                                          this file. No browser quota at all;
                                          per-file cap rises to 25 MB.
 
 The page probes for this server automatically — no configuration in the HTML.
 
-Running it (PyCharm)
---------------------
-  1. Put server.py and boe_builder_28.html in the same folder / PyCharm project.
+Running it locally (PyCharm)
+-----------------------------
+  1. Put server.py and boe_builder_*.html in the same folder / PyCharm project.
   2. Right-click server.py -> Run 'server'.  (Pure standard library — nothing
      to pip install, no virtualenv packages needed.)
   3. Open http://127.0.0.1:8000 in your browser.
 
-Running it (terminal)
----------------------
+Running it locally (terminal)
+-------------------------------
   python server.py                 # 127.0.0.1:8000, data in ./boe_data
   python server.py --port 9000
   python server.py --file boe_builder_28.html --data-dir /some/where
+
+Running it on Railway
+------------------------
+  1. Push server.py + your boe_builder_*.html to the GitHub repo Railway deploys.
+  2. In the Railway service settings, set the Start Command to: python server.py
+     (No Procfile needed — Railway injects PORT automatically, and this script
+     now reads it.)
+  3. (Strongly recommended) Set an environment variable BOE_ACCESS_TOKEN to a
+     long random string, per the security note above.
+  4. Deploy. Railway's assigned public URL should now load the app instead of
+     showing "Application failed to respond."
 
 Storage API (mirrors the window.storage interface exactly)
 ----------------------------------------------------------
@@ -50,10 +94,6 @@ Each key is stored as its own JSON file in boe_data/, with the key name
 base64url-encoded into the filename — so any key string is safe (no path
 traversal is possible) and a crash mid-write can't corrupt a save (writes go
 to a temp file first, then an atomic os.replace).
-
-Security note: binds to 127.0.0.1 by default, so only this machine can reach
-it. Estimates can carry CUI / contractor-proprietary data — think twice before
-exposing this on a network interface with --host.
 """
 
 import argparse
@@ -63,6 +103,7 @@ import errno
 import json
 import os
 import re
+import secrets
 import sys
 import tempfile
 import threading
@@ -71,12 +112,13 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse, parse_qs
 
 # ----------------------------------------------------------------------------
-# Configuration (finalized in main() from command-line args)
+# Configuration (finalized in main() from command-line args / environment)
 # ----------------------------------------------------------------------------
 
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(APP_DIR, "boe_data")
 HTML_PATH = None  # resolved in main()
+ACCESS_TOKEN = None  # resolved in main() from BOE_ACCESS_TOKEN env var, if set
 
 MAX_KEY_CHARS = 500                    # window.storage spec keeps keys short; be generous
 MAX_VALUE_BYTES = 100 * 1024 * 1024    # 100 MB per key — far above the client's 25 MB file cap
@@ -87,12 +129,6 @@ _write_lock = threading.Lock()  # serializes writes; reads are lock-free
 
 # ----------------------------------------------------------------------------
 # Key <-> filename mapping
-#
-# A storage key is arbitrary text (e.g. "boe:file:k3j9x2a"). Encoding it with
-# URL-safe base64 (no padding) produces a filename made only of [A-Za-z0-9_-],
-# which cannot escape DATA_DIR no matter what the key contains. The "p_"/"s_"
-# prefix keeps the personal and shared namespaces separate, mirroring the
-# `shared` flag in the window.storage interface.
 # ----------------------------------------------------------------------------
 
 _FNAME_RE = re.compile(r"^(p|s)_([A-Za-z0-9_-]+)\.json$")
@@ -204,7 +240,7 @@ def storage_list(prefix: str, shared: bool):
 # ----------------------------------------------------------------------------
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "BOEBuilder/1.0"
+    server_version = "BOEBuilder/1.1"
     protocol_version = "HTTP/1.1"
 
     # --- small helpers ------------------------------------------------------
@@ -220,6 +256,13 @@ class Handler(BaseHTTPRequestHandler):
 
     def _send_error_json(self, status: int, message: str) -> None:
         self._send_json(status, {"error": message})
+
+    def _authorized(self, parsed_qs) -> bool:
+        """True if no token is configured, or the caller supplied the right one."""
+        if not ACCESS_TOKEN:
+            return True
+        supplied = self.headers.get("X-BOE-Token") or parsed_qs.get("token", [None])[0]
+        return supplied is not None and secrets.compare_digest(supplied, ACCESS_TOKEN)
 
     def _read_json_body(self):
         length_header = self.headers.get("Content-Length")
@@ -268,18 +311,25 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         parsed = urlparse(self.path)
         path = parsed.path
+        qs = parse_qs(parsed.query)
 
         if path == "/api/storage/ping":
+            # Ping never requires the token — the client needs to detect the
+            # server exists before it has any token to send.
             self._send_json(HTTPStatus.OK, {
                 "ok": True,
                 "backend": "server",
                 "dataDir": DATA_DIR,
                 "maxValueBytes": MAX_VALUE_BYTES,
+                "authRequired": bool(ACCESS_TOKEN),
             })
             return
 
+        if path.startswith("/api/storage/") and not self._authorized(qs):
+            self._send_error_json(HTTPStatus.UNAUTHORIZED, "Missing or invalid access token.")
+            return
+
         if path == "/api/storage/get":
-            qs = parse_qs(parsed.query)
             key = qs.get("key", [None])[0]
             if not self._valid_key(key):
                 self._send_error_json(HTTPStatus.BAD_REQUEST, "Missing or invalid 'key'.")
@@ -293,7 +343,6 @@ class Handler(BaseHTTPRequestHandler):
             return
 
         if path == "/api/storage/list":
-            qs = parse_qs(parsed.query)
             prefix = qs.get("prefix", [""])[0]
             shared = self._shared_from_query(qs)
             keys = storage_list(prefix, shared)
@@ -316,6 +365,11 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         parsed = urlparse(self.path)
         path = parsed.path
+        qs = parse_qs(parsed.query)
+
+        if path.startswith("/api/storage/") and not self._authorized(qs):
+            self._send_error_json(HTTPStatus.UNAUTHORIZED, "Missing or invalid access token.")
+            return
 
         if path == "/api/storage/set":
             body = self._read_json_body()
@@ -390,7 +444,7 @@ class Handler(BaseHTTPRequestHandler):
 # Startup
 # ----------------------------------------------------------------------------
 
-def find_html(explicit: str | None) -> str:
+def find_html(explicit):
     if explicit:
         path = explicit if os.path.isabs(explicit) else os.path.join(APP_DIR, explicit)
         if not os.path.isfile(path):
@@ -413,12 +467,19 @@ def find_html(explicit: str | None) -> str:
 
 
 def main():
-    global DATA_DIR, HTML_PATH
+    global DATA_DIR, HTML_PATH, ACCESS_TOKEN
 
-    parser = argparse.ArgumentParser(description="BOE Builder local server")
-    parser.add_argument("--host", default="127.0.0.1",
-                        help="interface to bind (default: 127.0.0.1 — this machine only)")
-    parser.add_argument("--port", type=int, default=8000)
+    parser = argparse.ArgumentParser(description="BOE Builder local/server storage backend")
+    parser.add_argument(
+        "--host", default=os.environ.get("HOST", "0.0.0.0"),
+        help="interface to bind (default: env HOST, or 0.0.0.0 so PaaS platforms like "
+             "Railway can route to it; use 127.0.0.1 explicitly to restrict to this machine)",
+    )
+    parser.add_argument(
+        "--port", type=int, default=int(os.environ.get("PORT", 8000)),
+        help="port to bind (default: env PORT, which Railway/Heroku-style platforms set "
+             "automatically, else 8000)",
+    )
     parser.add_argument("--data-dir", default=DATA_DIR,
                         help="where estimate/file data is stored (default: ./boe_data)")
     parser.add_argument("--file", default=None,
@@ -428,12 +489,22 @@ def main():
     DATA_DIR = os.path.abspath(args.data_dir)
     os.makedirs(DATA_DIR, exist_ok=True)
     HTML_PATH = find_html(args.file)
+    ACCESS_TOKEN = os.environ.get("BOE_ACCESS_TOKEN") or None
 
     httpd = ThreadingHTTPServer((args.host, args.port), Handler)
     print("BOE Builder server")
     print(f"  serving : {os.path.basename(HTML_PATH)}")
     print(f"  data    : {DATA_DIR}")
-    print(f"  open    : http://{args.host}:{args.port}")
+    print(f"  host    : {args.host}:{args.port}")
+    if ACCESS_TOKEN:
+        print("  auth    : BOE_ACCESS_TOKEN is set — /api/storage/* requires it")
+    elif args.host not in ("127.0.0.1", "localhost"):
+        print(
+            "  WARNING : bound to a non-loopback host with NO access token set.\n"
+            "            Anyone who can reach this address can read/write/delete every\n"
+            "            stored estimate. Set BOE_ACCESS_TOKEN if this is reachable from\n"
+            "            outside your own machine."
+        )
     print("  stop    : Ctrl+C (PyCharm: red stop button)")
     try:
         httpd.serve_forever()
