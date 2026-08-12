@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-BOE Builder — local/server storage backend
+BOE Builder -- local/server storage backend
 ============================================
 
 Serves the Basis of Estimate builder (boe_builder_*.html) and gives it a real
@@ -10,15 +10,15 @@ DEPLOYMENT NOTE (Railway / any PaaS)
 -------------------------------------
 Railway (and most hosts) assign your app a PORT via an environment variable
 and route traffic to it on 0.0.0.0, not 127.0.0.1. Binding to 127.0.0.1
-(loopback-only) is invisible to their router — that's what "Application
+(loopback-only) is invisible to their router -- that's what "Application
 failed to respond" usually means. This version reads HOST/PORT from the
 environment automatically, so no extra configuration is needed on Railway:
 just set the Start Command to `python server.py` and deploy.
 
-SECURITY NOTE — read this before deploying anywhere public
+SECURITY NOTE -- read this before deploying anywhere public
 -------------------------------------------------------------
 This server has NO built-in authentication by default. Anyone who reaches
-its URL can read, write, or delete every stored estimate — including
+its URL can read, write, or delete every stored estimate -- including
 whatever CUI or contractor-proprietary data it might contain. Locally
 (127.0.0.1) that's fine, since only your own machine can reach it. Once
 it's reachable from the internet (as on Railway), that's a real exposure.
@@ -28,9 +28,9 @@ Two ways to guard it:
      string. Every /api/storage/* request must then include it, either as
      a `?token=...` query parameter or an `X-BOE-Token` header. Requests
      without it get a 401. The HTML side isn't wired to send this
-     automatically yet — you'd need to add the token to fetch() calls in
+     automatically yet -- you'd need to add the token to fetch() calls in
      the page, or put this behind a reverse proxy that injects it.
-  2. Don't deploy it publicly at all — run it locally (`python server.py`,
+  2. Don't deploy it publicly at all -- run it locally (`python server.py`,
      default 127.0.0.1) for your own machine, and use Railway (or similar)
      only if multiple trusted people on a private network need shared
      access, ideally with real authentication in front of it.
@@ -56,12 +56,12 @@ The BOE builder runs in three environments:
                                          this file. No browser quota at all;
                                          per-file cap rises to 25 MB.
 
-The page probes for this server automatically — no configuration in the HTML.
+The page probes for this server automatically -- no configuration in the HTML.
 
 Running it locally (PyCharm)
 -----------------------------
   1. Put server.py and boe_builder_*.html in the same folder / PyCharm project.
-  2. Right-click server.py -> Run 'server'.  (Pure standard library — nothing
+  2. Right-click server.py -> Run 'server'.  (Pure standard library -- nothing
      to pip install, no virtualenv packages needed.)
   3. Open http://127.0.0.1:8000 in your browser.
 
@@ -75,7 +75,7 @@ Running it on Railway
 ------------------------
   1. Push server.py + your boe_builder_*.html to the GitHub repo Railway deploys.
   2. In the Railway service settings, set the Start Command to: python server.py
-     (No Procfile needed — Railway injects PORT automatically, and this script
+     (No Procfile needed -- Railway injects PORT automatically, and this script
      now reads it.)
   3. (Strongly recommended) Set an environment variable BOE_ACCESS_TOKEN to a
      long random string, per the security note above.
@@ -91,7 +91,7 @@ Storage API (mirrors the window.storage interface exactly)
   GET  /api/storage/list?prefix=P&shared=0|1    -> {keys, prefix, shared}
 
 Each key is stored as its own JSON file in boe_data/, with the key name
-base64url-encoded into the filename — so any key string is safe (no path
+base64url-encoded into the filename -- so any key string is safe (no path
 traversal is possible) and a crash mid-write can't corrupt a save (writes go
 to a temp file first, then an atomic os.replace).
 """
@@ -121,7 +121,7 @@ HTML_PATH = None  # resolved in main()
 ACCESS_TOKEN = None  # resolved in main() from BOE_ACCESS_TOKEN env var, if set
 
 MAX_KEY_CHARS = 500                    # window.storage spec keeps keys short; be generous
-MAX_VALUE_BYTES = 100 * 1024 * 1024    # 100 MB per key — far above the client's 25 MB file cap
+MAX_VALUE_BYTES = 100 * 1024 * 1024    # 100 MB per key -- far above the client's 25 MB file cap
 MAX_BODY_BYTES = MAX_VALUE_BYTES + (1 * 1024 * 1024)  # value + JSON envelope headroom
 
 _write_lock = threading.Lock()  # serializes writes; reads are lock-free
@@ -160,7 +160,7 @@ def filename_to_key(fname: str):
 class QuotaError(Exception):
     """Raised when the value is too large or the disk is full.
 
-    The message intentionally contains the word "quota" — the client's
+    The message intentionally contains the word "quota" -- the client's
     isQuotaError() helper matches /quota/i and fails fast instead of retrying
     (retrying a full disk can never succeed)."""
 
@@ -169,7 +169,7 @@ def storage_set(key: str, value: str, shared: bool) -> None:
     raw = value.encode("utf-8")
     if len(raw) > MAX_VALUE_BYTES:
         raise QuotaError(
-            f"Value is {len(raw) / 1024 / 1024:.1f} MB — over the "
+            f"Value is {len(raw) / 1024 / 1024:.1f} MB -- over the "
             f"{MAX_VALUE_BYTES // (1024 * 1024)} MB per-key quota."
         )
     record = json.dumps(
@@ -192,7 +192,7 @@ def storage_set(key: str, value: str, shared: bool) -> None:
             except OSError:
                 pass
             if e.errno == errno.ENOSPC:
-                raise QuotaError("Disk is full — storage quota exceeded on the server.") from e
+                raise QuotaError("Disk is full -- storage quota exceeded on the server.") from e
             raise
 
 
@@ -314,7 +314,7 @@ class Handler(BaseHTTPRequestHandler):
         qs = parse_qs(parsed.query)
 
         if path == "/api/storage/ping":
-            # Ping never requires the token — the client needs to detect the
+            # Ping never requires the token -- the client needs to detect the
             # server exists before it has any token to send.
             self._send_json(HTTPStatus.OK, {
                 "ok": True,
@@ -359,7 +359,7 @@ class Handler(BaseHTTPRequestHandler):
             self.end_headers()
             return
 
-        # Everything else — including server.py itself and boe_data/ — is not served.
+        # Everything else -- including server.py itself and boe_data/ -- is not served.
         self._send_error_json(HTTPStatus.NOT_FOUND, "Not found.")
 
     def do_POST(self):
@@ -392,7 +392,7 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_error_json(HTTPStatus.INTERNAL_SERVER_ERROR,
                                       "Could not write to disk: " + str(e))
                 return
-            # Echo the value back — matches the shape window.storage.set returns.
+            # Echo the value back -- matches the shape window.storage.set returns.
             self._send_json(HTTPStatus.OK, {"key": key, "value": value, "shared": shared})
             return
 
@@ -422,7 +422,7 @@ class Handler(BaseHTTPRequestHandler):
             diag = (
                 "<html><body style='font-family:sans-serif;padding:40px;max-width:700px;margin:auto;'>"
                 "<h2>Server is running, but no boe_builder*.html was found</h2>"
-                "<p>The server process started fine and is answering requests — this page proves that. "
+                "<p>The server process started fine and is answering requests -- this page proves that. "
                 "The problem is just that it couldn't find the builder HTML file next to server.py.</p>"
                 f"<p><b>Looking in:</b> <code>{APP_DIR}</code></p>"
                 f"<p><b>Files actually present there:</b></p><ul>"
@@ -433,7 +433,7 @@ class Handler(BaseHTTPRequestHandler):
                 "</body></html>"
             )
             body = diag.encode("utf-8")
-            self.send_response(HTTPStatus.OK)  # 200, not an error — this page is fully intentional
+            self.send_response(HTTPStatus.OK)  # 200, not an error -- this page is fully intentional
             self.send_header("Content-Type", "text/html; charset=utf-8")
             self.send_header("Content-Length", str(len(body)))
             self.send_header("Cache-Control", "no-store")
@@ -446,7 +446,7 @@ class Handler(BaseHTTPRequestHandler):
         except OSError:
             self._send_error_json(
                 HTTPStatus.INTERNAL_SERVER_ERROR,
-                f"Could not read {os.path.basename(HTML_PATH)} — is it in the same "
+                f"Could not read {os.path.basename(HTML_PATH)} -- is it in the same "
                 "folder as server.py?",
             )
             return
@@ -471,19 +471,19 @@ class Handler(BaseHTTPRequestHandler):
 # ----------------------------------------------------------------------------
 
 def find_html(explicit):
-    """Returns a path, or None if nothing suitable was found — never crashes the
+    """Returns a path, or None if nothing suitable was found -- never crashes the
     process. A missing file should show a helpful page, not kill the server before
     it can even bind to a port (which is what makes 'Application failed to respond'
     so hard to diagnose).
 
     Selection order:
-      1. An exact, unversioned 'boe_builder.html' — if you keep your repo down to
+      1. An exact, unversioned 'boe_builder.html' -- if you keep your repo down to
          one file with this exact name, there is never any ambiguity about which
          one gets served. This is the recommended approach going forward.
       2. Otherwise, falls back to the old behavior for repos that still have
          versioned filenames (boe_builder_12.html, boe_builder_31.html, etc.):
          picks the one with the HIGHEST embedded number. Note this is NOT the same
-         as "most recently edited" — if an old, higher-numbered file is still
+         as "most recently edited" -- if an old, higher-numbered file is still
          sitting in the repo alongside a newer, lower-numbered one, the old one
          wins. Delete stale versioned copies, or better, switch to option 1.
     """
@@ -541,11 +541,11 @@ def main():
 
     httpd = ThreadingHTTPServer((args.host, args.port), Handler)
     print("BOE Builder server")
-    print(f"  serving : {os.path.basename(HTML_PATH) if HTML_PATH else '(no boe_builder*.html found — see warning above, / will show a diagnostic page)'}")
+    print(f"  serving : {os.path.basename(HTML_PATH) if HTML_PATH else '(no boe_builder*.html found -- see warning above, / will show a diagnostic page)'}")
     print(f"  data    : {DATA_DIR}")
     print(f"  host    : {args.host}:{args.port}")
     if ACCESS_TOKEN:
-        print("  auth    : BOE_ACCESS_TOKEN is set — /api/storage/* requires it")
+        print("  auth    : BOE_ACCESS_TOKEN is set -- /api/storage/* requires it")
     elif args.host not in ("127.0.0.1", "localhost"):
         print(
             "  WARNING : bound to a non-loopback host with NO access token set.\n"
