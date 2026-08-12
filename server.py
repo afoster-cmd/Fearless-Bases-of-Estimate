@@ -1,13 +1,11 @@
-
-Server · PY
 #!/usr/bin/env python3
 """
 BOE Builder — local/server storage backend
 ============================================
- 
+
 Serves the Basis of Estimate builder (boe_builder_*.html) and gives it a real
 storage backend on disk, replacing the browser's tiny localStorage quota.
- 
+
 DEPLOYMENT NOTE (Railway / any PaaS)
 -------------------------------------
 Railway (and most hosts) assign your app a PORT via an environment variable
@@ -16,7 +14,7 @@ and route traffic to it on 0.0.0.0, not 127.0.0.1. Binding to 127.0.0.1
 failed to respond" usually means. This version reads HOST/PORT from the
 environment automatically, so no extra configuration is needed on Railway:
 just set the Start Command to `python server.py` and deploy.
- 
+
 SECURITY NOTE — read this before deploying anywhere public
 -------------------------------------------------------------
 This server has NO built-in authentication by default. Anyone who reaches
@@ -24,7 +22,7 @@ its URL can read, write, or delete every stored estimate — including
 whatever CUI or contractor-proprietary data it might contain. Locally
 (127.0.0.1) that's fine, since only your own machine can reach it. Once
 it's reachable from the internet (as on Railway), that's a real exposure.
- 
+
 Two ways to guard it:
   1. Set the BOE_ACCESS_TOKEN environment variable to some long random
      string. Every /api/storage/* request must then include it, either as
@@ -36,15 +34,15 @@ Two ways to guard it:
      default 127.0.0.1) for your own machine, and use Railway (or similar)
      only if multiple trusted people on a private network need shared
      access, ideally with real authentication in front of it.
- 
+
 If BOE_ACCESS_TOKEN is unset and the server is bound to a non-loopback
 host, it prints a loud warning to the console on startup so this isn't
 silently forgotten.
- 
+
 Why this exists (the storage issue this fixes)
 ----------------------------------------------
 The BOE builder runs in three environments:
- 
+
   1. Inside Claude.ai as an artifact  -> Claude injects window.storage (~5 MB/key)
   2. Opened directly from disk        -> falls back to localStorage, which caps
      (file://)                           the WHOLE origin at ~5-10 MB TOTAL,
@@ -57,22 +55,22 @@ The BOE builder runs in three environments:
                                          written to the boe_data/ folder next to
                                          this file. No browser quota at all;
                                          per-file cap rises to 25 MB.
- 
+
 The page probes for this server automatically — no configuration in the HTML.
- 
+
 Running it locally (PyCharm)
 -----------------------------
   1. Put server.py and boe_builder_*.html in the same folder / PyCharm project.
   2. Right-click server.py -> Run 'server'.  (Pure standard library — nothing
      to pip install, no virtualenv packages needed.)
   3. Open http://127.0.0.1:8000 in your browser.
- 
+
 Running it locally (terminal)
 -------------------------------
   python server.py                 # 127.0.0.1:8000, data in ./boe_data
   python server.py --port 9000
   python server.py --file boe_builder_28.html --data-dir /some/where
- 
+
 Running it on Railway
 ------------------------
   1. Push server.py + your boe_builder_*.html to the GitHub repo Railway deploys.
@@ -83,7 +81,7 @@ Running it on Railway
      long random string, per the security note above.
   4. Deploy. Railway's assigned public URL should now load the app instead of
      showing "Application failed to respond."
- 
+
 Storage API (mirrors the window.storage interface exactly)
 ----------------------------------------------------------
   GET  /api/storage/ping                        -> {ok, backend, dataDir, ...}
@@ -91,13 +89,13 @@ Storage API (mirrors the window.storage interface exactly)
   POST /api/storage/set    {key, value, shared} -> {key, value, shared}
   POST /api/storage/delete {key, shared}        -> {key, deleted, shared}
   GET  /api/storage/list?prefix=P&shared=0|1    -> {keys, prefix, shared}
- 
+
 Each key is stored as its own JSON file in boe_data/, with the key name
 base64url-encoded into the filename — so any key string is safe (no path
 traversal is possible) and a crash mid-write can't corrupt a save (writes go
 to a temp file first, then an atomic os.replace).
 """
- 
+
 import argparse
 import base64
 import binascii
@@ -112,35 +110,35 @@ import threading
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse, parse_qs
- 
+
 # ----------------------------------------------------------------------------
 # Configuration (finalized in main() from command-line args / environment)
 # ----------------------------------------------------------------------------
- 
+
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(APP_DIR, "boe_data")
 HTML_PATH = None  # resolved in main()
 ACCESS_TOKEN = None  # resolved in main() from BOE_ACCESS_TOKEN env var, if set
- 
+
 MAX_KEY_CHARS = 500                    # window.storage spec keeps keys short; be generous
 MAX_VALUE_BYTES = 100 * 1024 * 1024    # 100 MB per key — far above the client's 25 MB file cap
 MAX_BODY_BYTES = MAX_VALUE_BYTES + (1 * 1024 * 1024)  # value + JSON envelope headroom
- 
+
 _write_lock = threading.Lock()  # serializes writes; reads are lock-free
- 
- 
+
+
 # ----------------------------------------------------------------------------
 # Key <-> filename mapping
 # ----------------------------------------------------------------------------
- 
+
 _FNAME_RE = re.compile(r"^(p|s)_([A-Za-z0-9_-]+)\.json$")
- 
- 
+
+
 def key_to_filename(key: str, shared: bool) -> str:
     encoded = base64.urlsafe_b64encode(key.encode("utf-8")).decode("ascii").rstrip("=")
     return ("s_" if shared else "p_") + encoded + ".json"
- 
- 
+
+
 def filename_to_key(fname: str):
     """Return (key, shared) or None if the filename isn't one of ours."""
     m = _FNAME_RE.match(fname)
@@ -153,20 +151,20 @@ def filename_to_key(fname: str):
     except (binascii.Error, UnicodeDecodeError):
         return None
     return key, (scope == "s")
- 
- 
+
+
 # ----------------------------------------------------------------------------
 # Storage operations
 # ----------------------------------------------------------------------------
- 
+
 class QuotaError(Exception):
     """Raised when the value is too large or the disk is full.
- 
+
     The message intentionally contains the word "quota" — the client's
     isQuotaError() helper matches /quota/i and fails fast instead of retrying
     (retrying a full disk can never succeed)."""
- 
- 
+
+
 def storage_set(key: str, value: str, shared: bool) -> None:
     raw = value.encode("utf-8")
     if len(raw) > MAX_VALUE_BYTES:
@@ -196,8 +194,8 @@ def storage_set(key: str, value: str, shared: bool) -> None:
             if e.errno == errno.ENOSPC:
                 raise QuotaError("Disk is full — storage quota exceeded on the server.") from e
             raise
- 
- 
+
+
 def storage_get(key: str, shared: bool):
     path = os.path.join(DATA_DIR, key_to_filename(key, shared))
     try:
@@ -208,8 +206,8 @@ def storage_get(key: str, shared: bool):
     except (json.JSONDecodeError, OSError):
         return None  # unreadable/corrupt record behaves like a missing key
     return record.get("value")
- 
- 
+
+
 def storage_delete(key: str, shared: bool) -> bool:
     path = os.path.join(DATA_DIR, key_to_filename(key, shared))
     with _write_lock:
@@ -218,8 +216,8 @@ def storage_delete(key: str, shared: bool) -> bool:
             return True
         except FileNotFoundError:
             return False
- 
- 
+
+
 def storage_list(prefix: str, shared: bool):
     keys = []
     try:
@@ -235,18 +233,18 @@ def storage_list(prefix: str, shared: bool):
             keys.append(key)
     keys.sort()
     return keys
- 
- 
+
+
 # ----------------------------------------------------------------------------
 # HTTP handler
 # ----------------------------------------------------------------------------
- 
+
 class Handler(BaseHTTPRequestHandler):
     server_version = "BOEBuilder/1.1"
     protocol_version = "HTTP/1.1"
- 
+
     # --- small helpers ------------------------------------------------------
- 
+
     def _send_json(self, status: int, payload: dict) -> None:
         body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
         self.send_response(status)
@@ -255,17 +253,17 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Cache-Control", "no-store")
         self.end_headers()
         self.wfile.write(body)
- 
+
     def _send_error_json(self, status: int, message: str) -> None:
         self._send_json(status, {"error": message})
- 
+
     def _authorized(self, parsed_qs) -> bool:
         """True if no token is configured, or the caller supplied the right one."""
         if not ACCESS_TOKEN:
             return True
         supplied = self.headers.get("X-BOE-Token") or parsed_qs.get("token", [None])[0]
         return supplied is not None and secrets.compare_digest(supplied, ACCESS_TOKEN)
- 
+
     def _read_json_body(self):
         length_header = self.headers.get("Content-Length")
         if length_header is None:
@@ -295,7 +293,7 @@ class Handler(BaseHTTPRequestHandler):
             self._send_error_json(HTTPStatus.BAD_REQUEST, "Body must be a JSON object.")
             return None
         return body
- 
+
     @staticmethod
     def _valid_key(key) -> bool:
         return (
@@ -303,18 +301,18 @@ class Handler(BaseHTTPRequestHandler):
             and 0 < len(key) <= MAX_KEY_CHARS
             and not any(c in key for c in "\x00\r\n")
         )
- 
+
     @staticmethod
     def _shared_from_query(qs) -> bool:
         return qs.get("shared", ["0"])[0] in ("1", "true", "True")
- 
+
     # --- routing ------------------------------------------------------------
- 
+
     def do_GET(self):
         parsed = urlparse(self.path)
         path = parsed.path
         qs = parse_qs(parsed.query)
- 
+
         if path == "/api/storage/ping":
             # Ping never requires the token — the client needs to detect the
             # server exists before it has any token to send.
@@ -326,11 +324,11 @@ class Handler(BaseHTTPRequestHandler):
                 "authRequired": bool(ACCESS_TOKEN),
             })
             return
- 
+
         if path.startswith("/api/storage/") and not self._authorized(qs):
             self._send_error_json(HTTPStatus.UNAUTHORIZED, "Missing or invalid access token.")
             return
- 
+
         if path == "/api/storage/get":
             key = qs.get("key", [None])[0]
             if not self._valid_key(key):
@@ -343,36 +341,36 @@ class Handler(BaseHTTPRequestHandler):
                 return
             self._send_json(HTTPStatus.OK, {"key": key, "value": value, "shared": shared})
             return
- 
+
         if path == "/api/storage/list":
             prefix = qs.get("prefix", [""])[0]
             shared = self._shared_from_query(qs)
             keys = storage_list(prefix, shared)
             self._send_json(HTTPStatus.OK, {"keys": keys, "prefix": prefix, "shared": shared})
             return
- 
+
         if path in ("/", "/index.html") or (HTML_PATH and path == "/" + os.path.basename(HTML_PATH)):
             self._serve_app()
             return
- 
+
         if path == "/favicon.ico":
             self.send_response(HTTPStatus.NO_CONTENT)
             self.send_header("Content-Length", "0")
             self.end_headers()
             return
- 
+
         # Everything else — including server.py itself and boe_data/ — is not served.
         self._send_error_json(HTTPStatus.NOT_FOUND, "Not found.")
- 
+
     def do_POST(self):
         parsed = urlparse(self.path)
         path = parsed.path
         qs = parse_qs(parsed.query)
- 
+
         if path.startswith("/api/storage/") and not self._authorized(qs):
             self._send_error_json(HTTPStatus.UNAUTHORIZED, "Missing or invalid access token.")
             return
- 
+
         if path == "/api/storage/set":
             body = self._read_json_body()
             if body is None:
@@ -397,7 +395,7 @@ class Handler(BaseHTTPRequestHandler):
             # Echo the value back — matches the shape window.storage.set returns.
             self._send_json(HTTPStatus.OK, {"key": key, "value": value, "shared": shared})
             return
- 
+
         if path == "/api/storage/delete":
             body = self._read_json_body()
             if body is None:
@@ -410,11 +408,11 @@ class Handler(BaseHTTPRequestHandler):
             deleted = storage_delete(key, shared)
             self._send_json(HTTPStatus.OK, {"key": key, "deleted": deleted, "shared": shared})
             return
- 
+
         self._send_error_json(HTTPStatus.NOT_FOUND, "Not found.")
- 
+
     # --- app file -----------------------------------------------------------
- 
+
     def _serve_app(self):
         if not HTML_PATH:
             try:
@@ -458,26 +456,26 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Cache-Control", "no-store")  # always pick up the latest edit
         self.end_headers()
         self.wfile.write(body)
- 
+
     # --- logging ------------------------------------------------------------
- 
+
     def log_message(self, fmt, *args):
         # One concise line per request; skip favicon noise.
         if "/favicon.ico" in (self.path or ""):
             return
         sys.stderr.write("  %s %s\n" % (self.command or "-", self.path or "-"))
- 
- 
+
+
 # ----------------------------------------------------------------------------
 # Startup
 # ----------------------------------------------------------------------------
- 
+
 def find_html(explicit):
     """Returns a path, or None if nothing suitable was found — never crashes the
     process. A missing file should show a helpful page, not kill the server before
     it can even bind to a port (which is what makes 'Application failed to respond'
     so hard to diagnose).
- 
+
     Selection order:
       1. An exact, unversioned 'boe_builder.html' — if you keep your repo down to
          one file with this exact name, there is never any ambiguity about which
@@ -495,15 +493,15 @@ def find_html(explicit):
             print(f"WARNING: --file {explicit!r} not found.")
             return None
         return path
- 
+
     exact = os.path.join(APP_DIR, "boe_builder.html")
     if os.path.isfile(exact):
         return exact
- 
+
     def version_of(name: str) -> int:
         m = re.search(r"(\d+)", name)
         return int(m.group(1)) if m else -1
- 
+
     try:
         candidates = [f for f in os.listdir(APP_DIR)
                       if re.match(r"^boe_builder.*\.html$", f, re.IGNORECASE)]
@@ -514,11 +512,11 @@ def find_html(explicit):
         return None
     candidates.sort(key=lambda f: (version_of(f), f))
     return os.path.join(APP_DIR, candidates[-1])
- 
- 
+
+
 def main():
     global DATA_DIR, HTML_PATH, ACCESS_TOKEN
- 
+
     parser = argparse.ArgumentParser(description="BOE Builder local/server storage backend")
     parser.add_argument(
         "--host", default=os.environ.get("HOST", "0.0.0.0"),
@@ -535,12 +533,12 @@ def main():
     parser.add_argument("--file", default=None,
                         help="which HTML file to serve (default: newest boe_builder*.html here)")
     args = parser.parse_args()
- 
+
     DATA_DIR = os.path.abspath(args.data_dir)
     os.makedirs(DATA_DIR, exist_ok=True)
     HTML_PATH = find_html(args.file)
     ACCESS_TOKEN = os.environ.get("BOE_ACCESS_TOKEN") or None
- 
+
     httpd = ThreadingHTTPServer((args.host, args.port), Handler)
     print("BOE Builder server")
     print(f"  serving : {os.path.basename(HTML_PATH) if HTML_PATH else '(no boe_builder*.html found — see warning above, / will show a diagnostic page)'}")
@@ -562,14 +560,7 @@ def main():
         print("\nstopped.")
     finally:
         httpd.server_close()
- 
- 
+
+
 if __name__ == "__main__":
     main()
- 
-
-
-
-
-
-
