@@ -4,45 +4,39 @@
 <meta charset="UTF-8">
 <title>Basis of Estimate — Builder</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{
-  /* Fearless brand palette — plum #5C3977 primary, coral #EE5341 accent,
-     lavender #CBC4D5 lines, warm off-white #F4F2EE paper.
-     jade = section-complete state, seal = errors + classification banners. */
   --paper:#F4F2EE;
   --paper-line:#CBC4D5;
   --ink:#262031;
   --ink-soft:#6B6377;
-  --plum:#5C3977;
-  --plum-deep:#3A2350;
-  --plum-soft:#7D5AA3;
-  --coral:#EE5341;
-  --coral-soft:#F58273;
-  --jade:#2E9163;
-  --seal:#BE3125;
+  --navy:#5C3977;
+  --navy-soft:#7D5AA3;
+  --brass:#EE5341;
+  --brass-soft:#F58273;
+  --green:#2E9163;
+  --red:#BE3125;
   --card:#FFFFFF;
   --radius:8px;
 }
 *{box-sizing:border-box;}
-html,body{margin:0;padding:0;background:var(--paper);color:var(--ink);font-family:'Raleway','Segoe UI',system-ui,sans-serif;}
+html,body{margin:0;padding:0;background:var(--paper);color:var(--ink);font-family:'Segoe UI',system-ui,-apple-system,Roboto,'Helvetica Neue',Arial,sans-serif;}
 body{min-height:100vh;}
-::selection{background:var(--coral-soft);color:#2A2135;}
+::selection{background:var(--brass-soft);color:#1F2229;}
 
 .app{display:grid;grid-template-columns:260px 1fr;min-height:100vh;}
 @media (max-width:860px){.app{grid-template-columns:1fr;}}
 
 /* ---------- RAIL ---------- */
-/* The rail scrolls with the document — no independent scrollbar, one page. */
 .rail{
-  background:linear-gradient(180deg,var(--plum) 0%,var(--plum-deep) 520px);
+  background:linear-gradient(180deg,var(--navy) 0%,#3A2350 100%);
   color:#EFEAF5;
-  padding:28px 22px 26px;
+  padding:28px 22px 22px;
   border-right:1px solid #2A1840;
 }
-.rail-brand{font-family:'Raleway','Segoe UI',system-ui,sans-serif;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--coral-soft);margin-bottom:4px;}
-.rail-title{font-family:'Raleway','Segoe UI',system-ui,sans-serif;font-size:22px;font-weight:600;line-height:1.25;color:#fff;margin:0 0 4px;}
+@media (max-width:860px){.rail{position:relative;}}
+.rail-brand{font-family:'Segoe UI Semibold','Segoe UI',system-ui,-apple-system,Roboto,'Helvetica Neue',Arial,sans-serif;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--brass-soft);margin-bottom:4px;}
+.rail-title{font-family:'Segoe UI Semibold','Segoe UI',system-ui,-apple-system,Roboto,'Helvetica Neue',Arial,sans-serif;font-size:22px;font-weight:600;line-height:1.25;color:#fff;margin:0 0 4px;}
 .rail-sub{font-size:11.5px;color:#B7ABCB;margin-bottom:26px;}
 
 .rail-nav{list-style:none;margin:0;padding:0;position:relative;}
@@ -53,81 +47,91 @@ body{min-height:100vh;}
   border-bottom:1px solid transparent;transition:color .15s;
 }
 .rail-nav a:hover{color:#fff;}
-.rail-nav a.active{color:var(--coral-soft);}
+.rail-nav a.active{color:var(--brass-soft);}
 .rail-num{
   position:absolute;left:0;top:9px;width:26px;height:26px;border-radius:50%;
-  background:var(--plum-soft);border:1px solid #6E5296;color:#D6CDE3;
-  font-family:'IBM Plex Mono','Cascadia Code',Consolas,monospace;font-size:11px;display:flex;align-items:center;justify-content:center;
+  background:var(--navy-soft);border:1px solid #6E5296;color:#D6CDE3;
+  font-family:'Cascadia Code','Consolas','SF Mono',ui-monospace,'Courier New',monospace;font-size:11px;display:flex;align-items:center;justify-content:center;
 }
-.rail-nav a.done .rail-num{background:var(--jade);border-color:var(--jade);color:#fff;}
-.rail-nav a.active .rail-num{background:var(--coral);border-color:var(--coral);color:#3A140C;}
+.rail-nav a.done .rail-num{background:var(--green);border-color:var(--green);color:#fff;}
+.rail-nav a.active .rail-num{background:var(--brass);border-color:var(--brass);color:#1a1a1a;}
 
 .rail-tools{margin-top:26px;padding-top:18px;border-top:1px solid #4E3670;display:flex;flex-direction:column;gap:8px;}
 .rail-btn{
-  font-family:'Raleway','Segoe UI',system-ui,sans-serif;font-size:12.5px;font-weight:600;
+  font-family:'Segoe UI',system-ui,-apple-system,Roboto,'Helvetica Neue',Arial,sans-serif;font-size:12.5px;font-weight:600;
   background:transparent;color:#EFEAF5;border:1px solid #7A5CA6;border-radius:var(--radius);
   padding:9px 10px;cursor:pointer;text-align:left;transition:background .15s,border-color .15s;
 }
-.rail-btn:hover{background:#4A2E6B;border-color:var(--coral-soft);}
-.rail-btn.primary{background:var(--coral);color:#3A140C;border-color:var(--coral);}
-.rail-btn.primary:hover{background:var(--coral-soft);}
+.rail-btn:hover{background:#4A2E6B;border-color:var(--brass-soft);}
+.rail-btn.primary{background:var(--brass);color:#1c1608;border-color:var(--brass);}
+.rail-btn.primary:hover{background:var(--brass-soft);}
 .rail-status{font-size:11px;color:#A99BC0;margin-top:6px;min-height:14px;}
-.saved-list{margin-top:10px;font-size:12px;}
+.saved-list{margin-top:10px;font-size:12px;max-height:150px;overflow-y:auto;}
 .saved-list div{display:flex;justify-content:space-between;gap:6px;padding:5px 0;border-bottom:1px dotted #5A4180;}
-.saved-list button{background:none;border:none;color:var(--coral-soft);cursor:pointer;font-size:11px;font-family:'IBM Plex Mono','Cascadia Code',Consolas,monospace;padding:0;}
+.saved-list button{background:none;border:none;color:var(--brass-soft);cursor:pointer;font-size:11px;font-family:'Cascadia Code','Consolas','SF Mono',ui-monospace,'Courier New',monospace;padding:0;}
 .saved-list button:hover{color:#fff;}
 
 /* ---------- MAIN DOC ---------- */
-.doc{padding:40px 56px 64px;max-width:900px;}
-@media (max-width:860px){.doc{padding:28px 20px 56px;}}
+.doc{padding:40px 56px 120px;max-width:900px;}
+@media (max-width:860px){.doc{padding:28px 20px 100px;}}
 
-.doc-head{border-bottom:3px double var(--plum);padding-bottom:22px;margin-bottom:8px;}
-.doc-eyebrow{font-family:'IBM Plex Mono','Cascadia Code',Consolas,monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--coral);margin-bottom:8px;}
-.doc-head h1{font-family:'Raleway','Segoe UI',system-ui,sans-serif;font-size:34px;margin:0 0 18px;color:var(--plum);font-weight:700;}
+.doc-head{border-bottom:2px solid var(--navy);padding-bottom:22px;margin-bottom:8px;}
+.doc-eyebrow{font-family:'Cascadia Code','Consolas','SF Mono',ui-monospace,'Courier New',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--brass);margin-bottom:8px;}
+.doc-head h1{font-family:'Segoe UI Semibold','Segoe UI',system-ui,-apple-system,Roboto,'Helvetica Neue',Arial,sans-serif;font-size:34px;margin:0 0 18px;color:var(--navy);font-weight:700;}
 .meta-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
-.classification-row{display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-bottom:16px;padding:10px 14px;background:#F1EEF5;border:1px solid var(--paper-line);border-radius:var(--radius);}
+.classification-row{display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-bottom:16px;padding:10px 14px;background:#F4F6FA;border:1px solid var(--paper-line);border-radius:var(--radius);}
 .classification-row label{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-soft);font-weight:600;}
-.classification-row select{font-family:'Raleway','Segoe UI',system-ui,sans-serif;font-size:12.5px;border:1px solid var(--paper-line);border-radius:var(--radius);padding:6px 8px;background:#fff;}
-.class-banner{background:var(--seal);color:#fff;text-align:center;font-family:'IBM Plex Mono','Cascadia Code',Consolas,monospace;font-size:12px;font-weight:700;letter-spacing:.08em;padding:6px;margin-bottom:18px;border-radius:var(--radius);}
+.classification-row select{font-family:'Segoe UI',system-ui,-apple-system,Roboto,'Helvetica Neue',Arial,sans-serif;font-size:12.5px;border:1px solid var(--paper-line);border-radius:var(--radius);padding:6px 8px;background:#fff;}
+.class-banner{background:var(--red);color:#fff;text-align:center;font-family:'Cascadia Code','Consolas','SF Mono',ui-monospace,'Courier New',monospace;font-size:12px;font-weight:700;letter-spacing:.08em;padding:6px;margin-bottom:18px;border-radius:var(--radius);}
 
 .na-toggle{display:flex;align-items:center;gap:8px;margin-top:10px;margin-left:32px;font-size:12px;color:var(--ink-soft);cursor:pointer;}
-.na-toggle input{accent-color:var(--coral);}
+.na-toggle input{accent-color:var(--brass);}
 
 .validation-block{
-  border:2px solid var(--seal);background:#FBE9E6;border-radius:var(--radius);
+  border:2px solid var(--red);background:#FDF1EF;border-radius:var(--radius);
   padding:16px 20px;margin-bottom:28px;
 }
-.validation-title{font-family:'Raleway','Segoe UI',system-ui,sans-serif;font-weight:700;color:var(--seal);font-size:14px;margin-bottom:10px;}
+.validation-title{font-family:'Segoe UI Semibold','Segoe UI',system-ui,-apple-system,Roboto,'Helvetica Neue',Arial,sans-serif;font-weight:700;color:var(--red);font-size:14px;margin-bottom:10px;}
 .validation-item{padding:4px 0;font-size:13px;}
-.validation-item a{color:var(--plum);text-decoration:underline;cursor:pointer;}
-.validation-item a:hover{color:var(--coral);}
+.validation-item a{color:var(--navy);text-decoration:underline;cursor:pointer;}
+.validation-item a:hover{color:var(--brass);}
 @media print{.validation-block{display:none !important;}}
 @media print{.class-banner{display:block !important;position:static;}}
 
 .changelog-toggle{margin-top:14px;font-size:11.5px;color:#D6CDE3;cursor:pointer;padding:4px 0;border-top:1px solid #4E3670;padding-top:10px;}
 .changelog-toggle:hover{color:#fff;}
-.changelog-panel{margin-top:8px;font-size:11px;background:#2E1C44;border-radius:var(--radius);padding:8px 10px;color:#D6CDE3;}
+.changelog-panel{margin-top:8px;max-height:180px;overflow-y:auto;font-size:11px;background:#2E1C44;border-radius:var(--radius);padding:8px 10px;color:#D6CDE3;}
 .changelog-entry{padding:3px 0;border-bottom:1px dotted #4E3670;}
-.changelog-time{color:#A99BC0;font-family:'IBM Plex Mono','Cascadia Code',Consolas,monospace;font-size:10px;margin-right:6px;}
+.changelog-time{color:#A99BC0;font-family:'Cascadia Code','Consolas','SF Mono',ui-monospace,'Courier New',monospace;font-size:10px;margin-right:6px;}
+
+.back-to-top{
+  position:fixed;left:24px;bottom:24px;z-index:100;
+  background:var(--brass);color:#241a0c;border:none;border-radius:24px;
+  padding:10px 18px;font-family:'Segoe UI',system-ui,-apple-system,Roboto,'Helvetica Neue',Arial,sans-serif;
+  font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.28);
+  transition:background .15s,transform .1s;
+}
+.back-to-top:hover{background:var(--brass-soft);transform:translateY(-2px);}
+@media print{.back-to-top{display:none !important;}}
 
 @media (max-width:700px){.meta-grid{grid-template-columns:repeat(2,1fr);}}
 .meta-field label{display:block;font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-soft);margin-bottom:4px;}
-.meta-field input{width:100%;border:none;border-bottom:1px solid var(--paper-line);background:transparent;font-family:'IBM Plex Mono','Cascadia Code',Consolas,monospace;font-size:13.5px;padding:4px 2px;color:var(--ink);}
-.meta-field input:focus{outline:none;border-bottom:1px solid var(--coral);}
+.meta-field input{width:100%;border:none;border-bottom:1px solid var(--paper-line);background:transparent;font-family:'Cascadia Code','Consolas','SF Mono',ui-monospace,'Courier New',monospace;font-size:13.5px;padding:4px 2px;color:var(--ink);}
+.meta-field input:focus{outline:none;border-bottom:1px solid var(--brass);}
 
 section.sec{margin-top:52px;scroll-margin-top:24px;}
 .sec-head{display:flex;align-items:baseline;gap:14px;margin-bottom:6px;}
-.sec-index{font-family:'IBM Plex Mono','Cascadia Code',Consolas,monospace;color:var(--coral);font-size:13px;}
-.sec-head h2{font-family:'Raleway','Segoe UI',system-ui,sans-serif;font-size:21px;margin:0;color:var(--plum);font-weight:600;}
+.sec-index{font-family:'Cascadia Code','Consolas','SF Mono',ui-monospace,'Courier New',monospace;color:var(--brass);font-size:13px;}
+.sec-head h2{font-family:'Segoe UI Semibold','Segoe UI',system-ui,-apple-system,Roboto,'Helvetica Neue',Arial,sans-serif;font-size:21px;margin:0;color:var(--navy);font-weight:600;}
 .sec-desc{font-size:13px;color:var(--ink-soft);margin:0 0 18px 32px;max-width:64ch;}
 
 .field-block{margin-left:32px;margin-bottom:16px;}
 .field-block label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-soft);margin-bottom:6px;font-weight:600;}
 textarea,.text-input{
   width:100%;border:1px solid var(--paper-line);background:var(--card);border-radius:var(--radius);
-  padding:10px 12px;font-family:'Raleway','Segoe UI',system-ui,sans-serif;font-size:14px;color:var(--ink);resize:vertical;line-height:1.5;
+  padding:10px 12px;font-family:'Segoe UI',system-ui,-apple-system,Roboto,'Helvetica Neue',Arial,sans-serif;font-size:14px;color:var(--ink);resize:vertical;line-height:1.5;
 }
-textarea:focus,.text-input:focus{outline:none;border-color:var(--coral);}
+textarea:focus,.text-input:focus{outline:none;border-color:var(--brass);}
 
 .two-col{margin-left:32px;display:grid;grid-template-columns:1fr 1fr;gap:20px;}
 @media (max-width:700px){.two-col{grid-template-columns:1fr;}}
@@ -135,102 +139,101 @@ textarea:focus,.text-input:focus{outline:none;border-color:var(--coral);}
 .method-grid{margin-left:32px;display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px;}
 @media (max-width:700px){.method-grid{grid-template-columns:1fr;}}
 .method-opt{display:flex;align-items:center;gap:9px;background:var(--card);border:1px solid var(--paper-line);border-radius:var(--radius);padding:10px 12px;font-size:13px;cursor:pointer;}
-.method-opt input{accent-color:var(--coral);}
-.method-opt.checked{border-color:var(--coral);background:#FBE7E2;}
+.method-opt input{accent-color:var(--brass);}
+.method-opt.checked{border-color:var(--brass);background:#FBF4E6;}
 
 .list-rows{margin-left:32px;}
 .list-row{display:flex;gap:10px;align-items:flex-start;margin-bottom:8px;}
 .list-row .text-input{flex:1;}
 .icon-btn{
   background:none;border:1px solid var(--paper-line);border-radius:var(--radius);
-  width:32px;height:32px;flex:none;cursor:pointer;color:var(--seal);font-size:16px;line-height:1;
+  width:32px;height:32px;flex:none;cursor:pointer;color:var(--red);font-size:16px;line-height:1;
 }
-.icon-btn:hover{border-color:var(--seal);}
+.icon-btn:hover{border-color:var(--red);}
 .add-row{
-  margin-left:32px;background:none;border:1px dashed #B9AECB;border-radius:var(--radius);
-  color:var(--plum-soft);font-size:12.5px;font-weight:600;padding:8px 14px;cursor:pointer;
+  margin-left:32px;background:none;border:1px dashed #C7BFA6;border-radius:var(--radius);
+  color:var(--navy-soft);font-size:12.5px;font-weight:600;padding:8px 14px;cursor:pointer;
 }
-.add-row:hover{border-color:var(--coral);color:var(--coral);}
+.add-row:hover{border-color:var(--brass);color:var(--brass);}
 
 /* tables */
-.tbl-wrap{margin-left:32px;overflow-x:auto;border:1px solid var(--paper-line);border-radius:var(--radius);background:var(--card);box-shadow:0 1px 2px rgba(46,32,64,.08);}
+.tbl-wrap{margin-left:32px;overflow-x:auto;border:1px solid var(--paper-line);border-radius:var(--radius);background:var(--card);box-shadow:0 1px 2px rgba(20,30,60,.05);}
 table.est{width:100%;border-collapse:collapse;font-size:13px;min-width:640px;}
 table.est th{
-  background:var(--plum);color:#EFEAF5;text-align:left;padding:9px 10px;font-weight:600;
+  background:var(--navy);color:#EFEAF5;text-align:left;padding:9px 10px;font-weight:600;
   font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;
 }
 table.est td{padding:6px 8px;border-bottom:1px solid var(--paper-line);vertical-align:middle;}
 table.est input,table.est select{
-  width:100%;border:none;background:transparent;font-family:'IBM Plex Mono','Cascadia Code',Consolas,monospace;font-size:12.5px;padding:6px 4px;color:var(--ink);
+  width:100%;border:none;background:transparent;font-family:'Cascadia Code','Consolas','SF Mono',ui-monospace,'Courier New',monospace;font-size:12.5px;padding:6px 4px;color:var(--ink);
 }
-table.est input:focus,table.est select:focus{outline:none;background:#FBE7E2;}
-table.est td.num{font-family:'IBM Plex Mono','Cascadia Code',Consolas,monospace;text-align:right;color:var(--plum-soft);font-weight:600;}
-table.est tfoot td{background:#E9E4F0;font-weight:700;font-family:'IBM Plex Mono','Cascadia Code',Consolas,monospace;color:var(--plum);}
+table.est input:focus,table.est select:focus{outline:none;background:#FBF4E6;}
+table.est td.num{font-family:'Cascadia Code','Consolas','SF Mono',ui-monospace,'Courier New',monospace;text-align:right;color:var(--navy-soft);font-weight:600;}
+table.est tfoot td{background:#F3EFE2;font-weight:700;font-family:'Cascadia Code','Consolas','SF Mono',ui-monospace,'Courier New',monospace;color:var(--navy);}
 
 .trace-chip{
-  display:inline-block;font-family:'IBM Plex Mono','Cascadia Code',Consolas,monospace;font-size:10px;background:#F9E2DD;
-  color:var(--coral);border:1px solid var(--coral-soft);border-radius:10px;padding:1px 7px;margin-left:8px;
+  display:inline-block;font-family:'Cascadia Code','Consolas','SF Mono',ui-monospace,'Courier New',monospace;font-size:10px;background:#EFE7D2;
+  color:var(--brass);border:1px solid var(--brass-soft);border-radius:10px;padding:1px 7px;margin-left:8px;
 }
 
 .rollup{
-  margin-left:32px;background:var(--plum);color:#EFEAF5;border-radius:var(--radius);padding:20px 24px;
+  margin-left:32px;background:var(--navy);color:#EFEAF5;border-radius:var(--radius);padding:20px 24px;
 }
-.rollup-line{display:flex;justify-content:space-between;font-family:'IBM Plex Mono','Cascadia Code',Consolas,monospace;font-size:13.5px;padding:6px 0;border-bottom:1px solid #4E3670;}
-.rollup-line.total{border-bottom:none;border-top:3px double var(--coral);margin-top:6px;padding-top:12px;font-size:16px;color:#fff;font-weight:600;}
-.rollup-formula{font-size:11px;color:#B4A6CC;margin-top:10px;font-family:'IBM Plex Mono','Cascadia Code',Consolas,monospace;}
+.rollup-line{display:flex;justify-content:space-between;font-family:'Cascadia Code','Consolas','SF Mono',ui-monospace,'Courier New',monospace;font-size:13.5px;padding:6px 0;border-bottom:1px solid #4E3670;}
+.rollup-line.total{border-bottom:none;border-top:2px solid var(--brass);margin-top:6px;padding-top:12px;font-size:16px;color:#fff;font-weight:600;}
+.rollup-formula{font-size:11px;color:#B4A6CC;margin-top:10px;font-family:'Cascadia Code','Consolas','SF Mono',ui-monospace,'Courier New',monospace;}
 
 .review-grid{margin-left:32px;display:flex;flex-direction:column;gap:10px;}
 .review-item{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--paper-line);border-radius:var(--radius);padding:11px 14px;font-size:13px;}
-.review-item input[type=checkbox]{accent-color:var(--jade);width:16px;height:16px;}
+.review-item input[type=checkbox]{accent-color:var(--green);width:16px;height:16px;}
 
 .dropzone{
-  margin-left:32px;border:2px dashed #B9AECB;border-radius:var(--radius);background:var(--card);
+  margin-left:32px;border:2px dashed #C7BFA6;border-radius:var(--radius);background:var(--card);
   padding:22px;text-align:center;transition:border-color .15s,background .15s;
 }
-.dropzone.drag{border-color:var(--coral);background:#FBE7E2;}
+.dropzone.drag{border-color:var(--brass);background:#FBF4E6;}
 .dz-text{font-size:13.5px;color:var(--ink);}
-.dz-text .link-btn{background:none;border:none;color:var(--plum-soft);text-decoration:underline;cursor:pointer;font:inherit;padding:0;font-weight:600;}
+.dz-text .link-btn{background:none;border:none;color:var(--navy-soft);text-decoration:underline;cursor:pointer;font:inherit;padding:0;font-weight:600;}
 .dz-hint{font-size:11.5px;color:var(--ink-soft);margin-top:5px;}
 .docs-list{margin-left:32px;margin-top:14px;display:flex;flex-direction:column;gap:10px;}
-.doc-card{border:1px solid var(--paper-line);border-radius:var(--radius);background:var(--card);padding:12px 14px;box-shadow:0 1px 2px rgba(46,32,64,.08);}
+.doc-card{border:1px solid var(--paper-line);border-radius:var(--radius);background:var(--card);padding:12px 14px;box-shadow:0 1px 2px rgba(20,30,60,.05);}
 .doc-card-head{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
-.doc-name{font-weight:600;font-size:13px;color:var(--plum);flex:1;}
-.doc-meta{font-family:'IBM Plex Mono','Cascadia Code',Consolas,monospace;font-size:10.5px;color:var(--ink-soft);}
+.doc-name{font-weight:600;font-size:13px;color:var(--navy);flex:1;}
+.doc-meta{font-family:'Cascadia Code','Consolas','SF Mono',ui-monospace,'Courier New',monospace;font-size:10.5px;color:var(--ink-soft);}
 .doc-status{font-size:11px;margin-bottom:6px;}
-.doc-status.done{color:var(--jade);}
-.doc-status.pending{color:var(--coral);}
+.doc-status.done{color:var(--green);}
+.doc-status.pending{color:var(--brass);}
 .doc-status.error,.doc-status.unsupported{color:var(--ink-soft);}
-.doc-card textarea{width:100%;border:1px solid var(--paper-line);border-radius:var(--radius);padding:7px 9px;font-size:12.5px;font-family:'Raleway','Segoe UI',system-ui,sans-serif;resize:vertical;}
+.doc-card textarea{width:100%;border:1px solid var(--paper-line);border-radius:var(--radius);padding:7px 9px;font-size:12.5px;font-family:'Segoe UI',system-ui,-apple-system,Roboto,'Helvetica Neue',Arial,sans-serif;resize:vertical;}
 .doc-card details{margin-top:8px;}
-.doc-card summary{cursor:pointer;font-size:11.5px;color:var(--plum-soft);font-weight:600;}
-.doc-card pre{white-space:pre-wrap;font-family:'IBM Plex Mono','Cascadia Code',Consolas,monospace;font-size:11px;color:var(--ink-soft);max-height:220px;overflow-y:auto;background:#F0EDF4;padding:10px;border-radius:var(--radius);margin-top:6px;}
+.doc-card summary{cursor:pointer;font-size:11.5px;color:var(--navy-soft);font-weight:600;}
+.doc-card pre{white-space:pre-wrap;font-family:'Cascadia Code','Consolas','SF Mono',ui-monospace,'Courier New',monospace;font-size:11px;color:var(--ink-soft);max-height:220px;overflow-y:auto;background:#FAF8F2;padding:10px;border-radius:var(--radius);margin-top:6px;}
 .doc-actions{display:flex;gap:8px;margin-top:8px;}
-.mini-btn{font-size:11px;font-family:'Raleway','Segoe UI',system-ui,sans-serif;font-weight:600;background:none;border:1px solid var(--paper-line);border-radius:var(--radius);padding:5px 9px;cursor:pointer;color:var(--plum-soft);}
-.mini-btn:hover{border-color:var(--coral);color:var(--coral);}
+.mini-btn{font-size:11px;font-family:'Segoe UI',system-ui,-apple-system,Roboto,'Helvetica Neue',Arial,sans-serif;font-weight:600;background:none;border:1px solid var(--paper-line);border-radius:var(--radius);padding:5px 9px;cursor:pointer;color:var(--navy-soft);}
+.mini-btn:hover{border-color:var(--brass);color:var(--brass);}
 
 .draft-row{margin-left:32px;margin-top:12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
-.draft-btn{background:var(--plum);color:#fff;border-color:var(--plum);padding:8px 14px;}
-.draft-btn:hover{background:var(--plum-soft);border-color:var(--plum-soft);color:#fff;}
+.draft-btn{background:var(--navy);color:#fff;border-color:var(--navy);padding:8px 14px;}
+.draft-btn:hover{background:var(--navy-soft);border-color:var(--navy-soft);color:#fff;}
 .draft-btn:disabled{opacity:.55;cursor:default;}
 
 .principle{
-  margin:70px 0 20px;margin-left:0;border-left:3px solid var(--coral);padding:16px 22px;background:#F8ECE8;
+  margin:70px 0 20px;margin-left:0;border-left:3px solid var(--brass);padding:16px 22px;background:#FBF0E6;
   border-radius:0 var(--radius) var(--radius) 0;
-  font-family:'Raleway','Segoe UI',system-ui,sans-serif;font-weight:500;font-size:15px;color:var(--plum);position:relative;
+  font-family:'Segoe UI Semibold','Segoe UI',system-ui,-apple-system,Roboto,'Helvetica Neue',Arial,sans-serif;font-weight:500;font-size:15px;color:var(--navy);position:relative;
 }
-.principle::before{content:"“";font-family:'Raleway','Segoe UI',system-ui,sans-serif;font-weight:700;color:var(--coral);font-size:28px;line-height:0;position:relative;top:8px;margin-right:2px;}
+.principle::before{content:"“";font-family:'Segoe UI Semibold','Segoe UI',system-ui,-apple-system,Roboto,'Helvetica Neue',Arial,sans-serif;font-weight:700;color:var(--brass);font-size:28px;line-height:0;position:relative;top:8px;margin-right:2px;}
 
-/* In-flow export bar — sits below the document on the same page, covers nothing. */
-.toolbar{background:var(--card);border-top:1px solid var(--paper-line);
-  padding:16px 40px;display:flex;gap:12px;align-items:center;justify-content:flex-end;}
-@media (max-width:860px){.toolbar{padding:14px 16px;flex-wrap:wrap;}}
+.toolbar{position:fixed;bottom:0;left:260px;right:0;background:#fff;border-top:1px solid var(--paper-line);
+  padding:12px 40px;display:flex;gap:12px;align-items:center;justify-content:flex-end;box-shadow:0 -4px 14px rgba(0,0,0,.05);z-index:20;}
+@media (max-width:860px){.toolbar{left:0;padding:12px 16px;flex-wrap:wrap;}}
 .tbtn{
-  font-family:'Raleway','Segoe UI',system-ui,sans-serif;font-size:13px;font-weight:600;padding:10px 16px;border-radius:var(--radius);
-  border:1px solid var(--plum);background:#fff;color:var(--plum);cursor:pointer;
+  font-family:'Segoe UI',system-ui,-apple-system,Roboto,'Helvetica Neue',Arial,sans-serif;font-size:13px;font-weight:600;padding:10px 16px;border-radius:var(--radius);
+  border:1px solid var(--navy);background:#fff;color:var(--navy);cursor:pointer;
 }
-.tbtn.primary{background:var(--plum);color:#fff;}
-.tbtn.primary:hover{background:var(--plum-soft);}
-.tbtn:hover{background:#E9E4F0;}
+.tbtn.primary{background:var(--navy);color:#fff;}
+.tbtn.primary:hover{background:var(--navy-soft);}
+.tbtn:hover{background:#F3EFE2;}
 
 @media print{
   .rail,.toolbar{display:none !important;}
@@ -290,6 +293,7 @@ table.est tfoot td{background:#E9E4F0;font-weight:700;font-family:'IBM Plex Mono
       <div class="saved-list" id="savedList"></div>
       <div class="changelog-toggle" onclick="toggleChangeLog()">🕘 Change log <span id="changeLogCount"></span></div>
       <div class="changelog-panel" id="changeLogPanel" style="display:none;"></div>
+      <button class="back-to-top" id="backToTopBtn" onclick="window.scrollTo({top:0,behavior:'smooth'})" style="display:none;">↑ Back to top</button>
     </div>
   </aside>
 
@@ -528,28 +532,23 @@ table.est tfoot td{background:#E9E4F0;font-weight:700;font-family:'IBM Plex Mono
 </div>
 
 <script>
-/* ---------- storage backends: three runtimes, one interface ----------
-   Every save/load in this app goes through window.storage (async get/set/delete/list).
-   Which implementation backs it depends on where the file is running:
+/* ---------- storage backend detection ----------
+   Three possible backends, tried in this order:
+     1. Claude's real window.storage (inside the Claude.ai artifact panel)
+     2. The Python server (server.py) — detected by pinging /api/storage/ping,
+        which only succeeds when this page is actually being served by that
+        script rather than opened directly as a file. Real disk storage,
+        no browser quota, 25MB/file.
+     3. A localStorage-backed fallback — works in any standalone browser, but
+        shares a small (~5-10MB total) quota across everything.
+   window.__storageBackend is set to 'claude' | 'server' | 'local' once decided.
+   window.__usingLocalStorageFallback stays as a back-compat alias for 'local'. */
+window.__storageBackend='claude';
+window.__usingLocalStorageFallback=false;
 
-   1. "claude"      — Claude's artifact panel injects a real window.storage. Use it as-is.
-                      (~5 MB per key on Claude's backend.)
-   2. "server"      — Served by the companion server.py (python server.py, then open
-                      http://127.0.0.1:8000). Detected by pinging /api/storage/ping.
-                      Data lives on disk in boe_data/ next to server.py — no browser
-                      quota, so large original files and many saved estimates all fit.
-   3. "local"       — Opened directly from disk (file://) with no server: fall back to
-                      localStorage. Works, but the whole origin shares only ~5–10 MB,
-                      so per-file byte storage is tightly capped.
-
-   Detection is async (the server ping is a fetch), so boot goes through initStorage()
-   at the bottom of this script before loadDraft() runs. */
-window.__storageBackend = null;             // 'claude' | 'server' | 'local'
-window.__usingLocalStorageFallback = false; // kept for backwards compatibility
-
-function installLocalStoragePolyfill(){
-  window.__storageBackend = 'local';
-  window.__usingLocalStorageFallback = true;
+function installLocalStorageFallback(){
+  window.__storageBackend='local';
+  window.__usingLocalStorageFallback=true;
   const NS='__boe__:';
   const fullKey=(key,shared)=>NS+(shared?'shared:':'priv:')+key;
   window.storage={
@@ -583,65 +582,54 @@ function installLocalStoragePolyfill(){
 }
 
 function installServerStorage(){
-  window.__storageBackend = 'server';
-  window.__usingLocalStorageFallback = false;
-  const base='/api/storage';
-  async function call(path, init){
-    let res;
-    try{
-      res = await fetch(base+path, init);
-    }catch(e){
-      throw new Error('Storage server unreachable — is server.py still running? ('+(e&&e.message||'network error')+')');
-    }
-    let body=null;
-    try{ body=await res.json(); }catch(e){ /* non-JSON error page */ }
-    if(!res.ok){
-      const err=new Error((body&&body.error) || ('Storage server error (HTTP '+res.status+')'));
-      if(res.status===404) err.name='NotFoundError';
-      if(res.status===413||res.status===507) err.name='QuotaExceededError';
-      throw err;
-    }
-    return body;
+  window.__storageBackend='server';
+  async function parseErrorOrThrow(resp){
+    let msg='HTTP '+resp.status;
+    try{ const j=await resp.json(); if(j && j.error) msg=j.error; }catch(e){}
+    throw new Error(msg);
   }
   window.storage={
     async get(key,shared){
-      return call('/get?key='+encodeURIComponent(key)+'&shared='+(shared?'1':'0'));
+      const resp=await fetch('/api/storage/get?key='+encodeURIComponent(key)+'&shared='+(shared?1:0),{cache:'no-store'});
+      if(resp.status===404) throw new Error('Key not found: '+key);
+      if(!resp.ok) await parseErrorOrThrow(resp);
+      return await resp.json();
     },
     async set(key,value,shared){
-      return call('/set',{method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({key,value,shared:!!shared})});
+      const resp=await fetch('/api/storage/set',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key,value,shared:!!shared})});
+      if(!resp.ok) await parseErrorOrThrow(resp);
+      return await resp.json();
     },
     async delete(key,shared){
-      return call('/delete',{method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({key,shared:!!shared})});
+      const resp=await fetch('/api/storage/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key,shared:!!shared})});
+      if(!resp.ok) await parseErrorOrThrow(resp);
+      return await resp.json();
     },
     async list(prefix,shared){
-      return call('/list?prefix='+encodeURIComponent(prefix||'')+'&shared='+(shared?'1':'0'));
+      const resp=await fetch('/api/storage/list?prefix='+encodeURIComponent(prefix||'')+'&shared='+(shared?1:0),{cache:'no-store'});
+      if(!resp.ok) await parseErrorOrThrow(resp);
+      return await resp.json();
     }
   };
 }
 
-async function initStorage(){
-  // Tier 1: Claude's artifact panel already provides window.storage.
-  if(window.storage && typeof window.storage.set==='function'){
-    window.__storageBackend='claude';
-    return;
-  }
-  // Tier 2: served over http(s) — probe for the companion server.py storage API.
-  if(location.protocol==='http:' || location.protocol==='https:'){
-    try{
-      const ctl=new AbortController();
-      const t=setTimeout(()=>ctl.abort(), 2000);
-      const res=await fetch('/api/storage/ping',{cache:'no-store',signal:ctl.signal});
-      clearTimeout(t);
-      if(res.ok){
-        const info=await res.json().catch(()=>null);
-        if(info && info.ok){ installServerStorage(); return; }
-      }
-    }catch(e){ /* no server API on this host — fall through */ }
-  }
-  // Tier 3: file:// or a plain static host — localStorage fallback.
-  installLocalStoragePolyfill();
+async function pingServer(timeoutMs){
+  try{
+    const ctrl=new AbortController();
+    const t=setTimeout(()=>ctrl.abort(),timeoutMs);
+    const resp=await fetch('/api/storage/ping',{signal:ctrl.signal,cache:'no-store'});
+    clearTimeout(t);
+    if(!resp.ok) return false;
+    const data=await resp.json();
+    return !!(data && data.ok);
+  }catch(e){ return false; }
+}
+
+async function initStorageBackend(){
+  const hasReal=window.storage && typeof window.storage.set==='function' && typeof window.storage.get==='function';
+  if(hasReal) return; // real Claude.ai storage — leave it exactly as-is
+  if(await pingServer(800)){ installServerStorage(); }
+  else{ installLocalStorageFallback(); }
 }
 
 const METHODS = ["Analogous / similar previous projects","Expert judgment","Vendor quotes","Engineering calculations","Labor standards or historical data","Parametric model"];
@@ -907,17 +895,14 @@ function logDocToEvidence(id){
 }
 
 /* ---------- real file storage (actual bytes, not just extracted text) ---------- */
-// The safe per-file byte budget depends on which storage backend is live:
-//   server — disk-backed via server.py; no browser quota, so allow up to 25 MB
-//            (base64 data-URL encoding inflates that ~33% on the wire, still fine).
-//   claude — Claude's backend caps each KEY at ~5 MB; ~3.5 MB of raw file leaves
-//            headroom for the base64 + JSON wrapper.
-//   local  — localStorage caps the WHOLE origin at ~5-10 MB TOTAL, shared across every
-//            file, every saved estimate, and the draft itself — so the safe per-file
-//            budget is much smaller, or a second upload blows the shared quota.
+// Claude's real storage caps each KEY at ~5MB. A browser's localStorage (used when this
+// runs standalone with no server) caps the WHOLE origin's storage at ~5-10MB TOTAL, shared
+// across every file, every saved estimate, and the draft itself. The Python server backend
+// writes to real disk with no such browser quota, so it gets a much larger allowance.
 function maxStoredFileBytes(){
   if(window.__storageBackend==='server') return 25*1024*1024;
-  return window.__usingLocalStorageFallback ? 700*1024 : 3.5*1024*1024;
+  if(window.__storageBackend==='local') return 700*1024;
+  return 3.5*1024*1024;
 }
 
 function fileToDataUrl(file){
@@ -933,13 +918,12 @@ async function storeFileBytes(doc, file){
   const cap=maxStoredFileBytes();
   if(file.size>cap){
     doc.fileStatus='skipped';
-    const mb=(file.size/1024/1024).toFixed(1);
     if(window.__storageBackend==='server'){
-      doc.fileNote=`Original file is ${mb} MB — over the ${(cap/1024/1024).toFixed(0)} MB per-file limit for saving the actual bytes, so only the extracted text is kept.`;
-    } else if(window.__usingLocalStorageFallback){
-      doc.fileNote=`Original file is ${mb} MB — standalone mode's browser storage is shared across everything (all files + saved estimates) and typically totals only 5-10 MB, so files over ~${(cap/1024).toFixed(0)} KB aren't saved as bytes. Extracted text is still kept. Tip: run the companion server.py and open the app at http://127.0.0.1:8000 to store large originals on disk instead.`;
+      doc.fileNote=`Original file is ${(file.size/1024/1024).toFixed(1)} MB — over the server's ${(cap/1024/1024).toFixed(0)} MB per-file limit. Extracted text is still kept.`;
+    } else if(window.__storageBackend==='local'){
+      doc.fileNote=`Original file is ${(file.size/1024/1024).toFixed(1)} MB — standalone browser storage is shared across everything (all files + saved estimates) and typically totals only 5-10 MB, so files over ~${(cap/1024).toFixed(0)} KB aren't saved as bytes. Extracted text is still kept.`;
     } else {
-      doc.fileNote=`Original file is ${mb} MB — over the ~3.5 MB limit for saving the actual file, so only the extracted text is kept.`;
+      doc.fileNote=`Original file is ${(file.size/1024/1024).toFixed(1)} MB — over the ~3.5 MB limit for saving the actual file, so only the extracted text is kept.`;
     }
     renderDocs();
     return;
@@ -955,9 +939,7 @@ async function storeFileBytes(doc, file){
     console.error('file storage failed',e);
     doc.fileStatus='error';
     doc.fileNote=isQuotaError(e)
-      ? (window.__storageBackend==='server'
-          ? "The storage server rejected this file (disk full or over the per-key limit) — its bytes weren't saved, but its extracted text was."
-          : "Browser storage is full — this file's bytes weren't saved, but its extracted text was. Delete an unused saved estimate or a previously-uploaded document to free up space.")
+      ? "Browser storage is full — this file's bytes weren't saved, but its extracted text was. Delete an unused saved estimate or a previously-uploaded document to free up space."
       : 'Could not save the original file (storage error) — extracted text is still kept.';
   }
   renderDocs();
@@ -1458,7 +1440,7 @@ function renderAutofillReport(items){
     box.style.fontSize='12.5px';
     document.getElementById('draftScopeNote').insertAdjacentElement('afterend', box);
   }
-  box.innerHTML='<div style="font-weight:700;margin-bottom:8px;color:var(--plum);">What was actually pulled from the document:</div>'+
+  box.innerHTML='<div style="font-weight:700;margin-bottom:8px;color:var(--navy);">What was actually pulled from the document:</div>'+
     items.map(it=>`<div style="display:flex;gap:8px;padding:3px 0;">
         <span style="flex:none;">${it.found?'✅':'⬜'}</span>
         <span><b>${it.sec}</b> — ${it.detail}</span>
@@ -1727,6 +1709,9 @@ window.addEventListener('scroll',()=>{
   let current=secEls[0]?.id;
   for(const s of secEls){ if(s.getBoundingClientRect().top<140) current=s.id; }
   navLinks.forEach(a=>a.classList.toggle('active',a.getAttribute('href')==='#'+current));
+
+  const btn=document.getElementById('backToTopBtn');
+  if(btn) btn.style.display = window.scrollY>300 ? 'block' : 'none';
 },{passive:true});
 
 /* ---------- persistence ---------- */
@@ -1779,12 +1764,11 @@ async function loadDraft(){
   }catch(e){ /* no draft yet */ }
   renderAll();
   refreshSavedList();
+  const el=document.getElementById('saveStatus');
   if(window.__storageBackend==='server'){
-    const el=document.getElementById('saveStatus');
-    el.innerHTML='Server mode: saved to the <b>boe_data</b> folder next to server.py.<br>No browser quota — large files and many estimates all fit.';
-    el.style.color='#D6CDE3';
-  } else if(window.__usingLocalStorageFallback){
-    const el=document.getElementById('saveStatus');
+    el.innerHTML='Connected to local server storage.<br>Saved to disk — no browser size limits.';
+    el.style.color='#a8d9bb';
+  } else if(window.__storageBackend==='local'){
     el.innerHTML='Standalone mode: saved in this browser only.<br>Typically a few MB total — large original files may not fit.';
     el.style.color='#D6CDE3';
   }
@@ -1976,13 +1960,7 @@ ${s.qa.notes?'\nNotes: '+s.qa.notes:''}
   URL.revokeObjectURL(url);
 }
 
-/* Boot: pick the storage backend first (async — the server probe is a fetch),
-   then load the draft. Nothing touches window.storage before this resolves. */
-initStorage().then(loadDraft).catch(e=>{
-  console.error('storage init failed', e);
-  installLocalStoragePolyfill();
-  loadDraft();
-});
+initStorageBackend().then(loadDraft);
 </script>
 </body>
 </html>
